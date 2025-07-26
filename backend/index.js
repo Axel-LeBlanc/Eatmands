@@ -25,6 +25,9 @@ app.use('/api/pedidos', pedidosRoutes);
 const detallePedidoRoutes = require('./routes/detalle_pedido');
 app.use('/api/detalle_pedido', detallePedidoRoutes);
 
+const filtroPedidoRouter = require('./routes/filtro_pedido');
+app.use('/pedidos/filtro', filtroPedidoRouter);
+
 
 // Servidor
 const PORT = process.env.PORT || 3001;
