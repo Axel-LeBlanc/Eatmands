@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { registrarActividad } = require('../utils/historial');
-
+const autenticarToken = require('../middleware/autenticarToken');
+const verificarPermiso = require('../middleware/permisos');
 
 // Obtener todos los productos
 router.get('/', async (req, res) => {
@@ -59,33 +60,43 @@ router.put('/:id/stock', async (req, res) => {
 });
 
 // Crear un nuevo producto
-router.post('/', async (req, res) => {
-  const { nombre, descripcion, precio, stock, id_categoria, disponible } = req.body;
+router.post('/', autenticarToken, verificarPermiso(['admin', 'encargado']), async (req, res) => {
+  router.post('/', async (req, res) => {
+    const { nombre, descripcion, precio, stock, id_categoria, disponible } = req.body;
 
-  if (!nombre || precio == null) {
-    return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
-  }
+    if (!nombre || precio == null) {
+      return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
+    }
 
-  const sql = `
-    INSERT INTO productos (nombre, descripcion, precio, stock, id_categoria, disponible)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
+    const sql = `
+      INSERT INTO productos (nombre, descripcion, precio, stock, id_categoria, disponible)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
 
-  try {
-    const [result] = await db.execute(sql, [
-      nombre,
-      descripcion,
-      precio,
-      stock || 0,
-      id_categoria || null,
-      disponible ?? true
-    ]);
+    try {
+      const [result] = await db.execute(sql, [
+        nombre,
+        descripcion,
+        precio,
+        stock || 0,
+        id_categoria || null,
+        disponible ?? true
+      ]);
 
-    res.status(201).json({ mensaje: 'Producto creado correctamente', id: result.insertId });
-  } catch (err) {
-    console.error('Error al registrar producto:', err);
-    res.status(500).json({ error: 'Error al registrar producto' });
-  }
+          // Registrar en historial
+      await registrarHistorial(
+        id_usuario,
+        'crear',
+        'producto',
+        `Producto creado: ${nombre} (ID ${resultado.insertId})`
+      );
+
+      res.status(201).json({ mensaje: 'Producto creado correctamente', id: result.insertId });
+    } catch (err) {
+      console.error('Error al registrar producto:', err);
+      res.status(500).json({ error: 'Error al registrar producto' });
+    }
+  });
 });
 
 
