@@ -39,6 +39,12 @@ app.use('/api/detalle_pedido', detallePedidoRoutes);
 const filtroPedidoRouter = require('./routes/filtro_pedido');
 app.use('/pedidos/filtro', filtroPedidoRouter);
 
+const historialRoutes = require('./routes/historial');
+app.use('/api/historial', historialRoutes);
+
+const exportarHistorial = require('./routes/exportar_historial');
+app.use('/api/historial', exportarHistorial); // misma base que la de consultas normales
+
 
 // Servidor
 const PORT = process.env.PORT || 3001;

@@ -1,4 +1,3 @@
-// Este middleware autentica el token JWT y lo agrega al objeto de solicitud
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
