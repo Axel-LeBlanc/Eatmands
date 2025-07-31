@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const autenticarToken = require('../middleware/autenticacion');
+const verificarPermiso = require('../middleware/permisos');
 
 // Obtener todas las categorías
-router.get('/', async (req, res) => {
+router.get('/', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero', 'cajero', 'cocinero']), async (req, res) => {
   try {
     const [categorias] = await db.execute('SELECT * FROM categorias');
     res.json(categorias);
@@ -15,7 +17,7 @@ router.get('/', async (req, res) => {
 
 
 // Obtener una categoría por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero', 'cajero', 'cocinero']), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -35,8 +37,9 @@ router.get('/:id', async (req, res) => {
 
 
 // Crear una nueva categoría
-router.post('/', async (req, res) => {
+router.post('/', autenticarToken, verificarPermiso(['admin', 'gerente']), async (req, res) => {
   const { nombre } = req.body;
+  const id_usuario = req.usuario.id_usuario;
 
   if (!nombre) {
     return res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -47,6 +50,8 @@ router.post('/', async (req, res) => {
       'INSERT INTO categorias (nombre) VALUES (?)',
       [nombre]
     );
+
+    await registrarActividad(id_usuario, 'categoria', 'crear', `Categoría creada: ${nombre} (ID ${result.insertId})`);
 
     res.status(201).json({
       mensaje: 'Categoría creada correctamente',
@@ -60,9 +65,10 @@ router.post('/', async (req, res) => {
 
 
 // Actualizar una categoría
-router.put('/:id', async (req, res) => {
+router.put('/:id', autenticarToken, verificarPermiso(['admin', 'gerente']), async (req, res) => {
   const { id } = req.params;
   const { nombre } = req.body;
+  const id_usuario = req.usuario.id_usuario;
 
   if (!nombre) {
     return res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -77,7 +83,8 @@ router.put('/:id', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ mensaje: 'Categoría no encontrada' });
     }
-
+    await registrarActividad(id_usuario, 'categoria', 'actualizar', `Categoría actualizada: ${nombre} (ID ${id})`);
+    
     res.json({ mensaje: 'Categoría actualizada correctamente' });
   } catch (error) {
     console.error('Error al actualizar categoría:', error);
@@ -86,8 +93,9 @@ router.put('/:id', async (req, res) => {
 });
 
 // Eliminar una categoría
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', autenticarToken, verificarPermiso(['admin']), async (req, res) => {
   const { id } = req.params;
+  const id_usuario = req.usuario.id_usuario;
 
   try {
     const [result] = await db.execute(
@@ -98,7 +106,8 @@ router.delete('/:id', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ mensaje: 'Categoría no encontrada' });
     }
-
+    await registrarActividad(id_usuario, 'categoria', 'eliminar', `Categoría eliminada: ${id}`);
+    
     res.json({ mensaje: 'Categoría eliminada correctamente' });
   } catch (error) {
     console.error('Error al eliminar categoría:', error);

@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const autenticarToken = require('../middleware/autenticacion');
+const verificarPermiso = require('../middleware/permisos');
 
 // Crear nuevo pedido
-router.post('/', async (req, res) => {
-  const { id_usuario, productos, destinatario, descuento_total = 0 } = req.body;
+router.post('/', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado']), async (req, res) => {
+    const id_usuario = req.usuario.id_usuario;
+    const {productos, destinatario, descuento_total = 0 } = req.body;
 
   if (!id_usuario || !Array.isArray(productos) || productos.length === 0 || !destinatario) {
     return res.status(400).json({ error: 'Faltan campos requeridos o productos vacíos' });
@@ -93,6 +96,8 @@ router.post('/', async (req, res) => {
       );
     }
 
+    await registrarActividad(id_usuario, 'pedido', 'crear', `Pedido creado: ID ${id_pedido}, Total: $${total}`);
+
     res.status(201).json({ mensaje: 'Pedido registrado correctamente', id_pedido, total });
 
   } catch (error) {
@@ -104,7 +109,7 @@ router.post('/', async (req, res) => {
 
 
 // Obtener todos los pedidos con sus detalles
-router.get('/', async (req, res) => {
+router.get('/', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado', 'cajero', 'cocinero']), async (req, res) => {
   try {
     // Paso 1: Obtener pedidos y detalles
     const [pedidos] = await db.execute(`
@@ -151,7 +156,7 @@ router.get('/', async (req, res) => {
 });
 
 //Obtener pedido completo por ID 
-router.get('/:id', async (req, res) => {
+router.get('/:id', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado', 'cajero']), async (req, res) => {
   const { id } = req.params;
   try {
     // 1. Buscar el pedido general
@@ -217,7 +222,7 @@ router.get('/:id', async (req, res) => {
 
 
 // Cambiar el estado de un pedido
-router.put('/:id/estado', async (req, res) => {
+router.put('/:id/estado', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado', 'cajero', 'cocinero']), async (req, res) => {
   const { id } = req.params;
   const { estado } = req.body;
 
@@ -245,7 +250,7 @@ router.put('/:id/estado', async (req, res) => {
 });
 
 // Obtener pedidos que cambiaron de estado en los últimos X segundos
-router.get('/notificaciones/recientes', async (req, res) => {
+router.get('/notificaciones/recientes', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado', 'cajero', 'cocinero']), async (req, res) => {
   const { segundos = 5 } = req.query; // Valor por defecto: últimos 5 segundos
 
   try {
@@ -267,7 +272,7 @@ router.get('/notificaciones/recientes', async (req, res) => {
 
 
 // Cancelar un pedido por ID (solo cambia el estado)
-router.patch('/cancelar/:id', async (req, res) => {
+router.patch('/cancelar/:id', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado', 'cajero']), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -289,7 +294,7 @@ router.patch('/cancelar/:id', async (req, res) => {
 
 
 // Eliminar un pedido por ID
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', autenticarToken, verificarPermiso(['admin', 'gerente']), async (req, res) => {
   const { id } = req.params;
   try {
     await db.execute('DELETE FROM detalle_pedido WHERE id_pedido = ?', [id]);
@@ -298,6 +303,9 @@ router.delete('/:id', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
+
+
+    await registrarActividad(id_usuario, 'pedidos', 'eliminar', `Pedido eliminado: ${id}`);
 
     res.json({ mensaje: 'Pedido eliminado correctamente' });
   } catch (error) {

@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const autenticarToken = require('../middleware/autenticacion');
+const verificarPermiso = require('../middleware/permisos');
 
 // Modificar los productos de un pedido existente
-router.put('/:id/modificar-productos', async (req, res) => {
+router.put('/:id/modificar-productos', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero']), async (req, res) => {
   const { id } = req.params;
   const { nuevos_productos } = req.body;
 
@@ -47,10 +49,10 @@ router.put('/:id/modificar-productos', async (req, res) => {
       };
     });
 
-    // 1. Borrar detalles anteriores
+    //Borrar detalles anteriores
     await db.execute('DELETE FROM detalle_pedido WHERE id_pedido = ?', [id]);
 
-    // 2. Insertar los nuevos detalles
+    //Insertar los nuevos detalles
     for (const detalle of nuevosDetalles) {
       await db.execute(
         'INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
@@ -58,7 +60,7 @@ router.put('/:id/modificar-productos', async (req, res) => {
       );
     }
 
-    // 3. Actualizar el total del pedido
+    //Actualizar el total del pedido
     await db.execute(
       'UPDATE pedidos SET total = ? WHERE id_pedido = ?',
       [total, id]
@@ -73,7 +75,7 @@ router.put('/:id/modificar-productos', async (req, res) => {
 });
 
 //Eliminar producto específico de un pedido
-router.delete('/:id_pedido/producto/:id_producto', async (req, res) => {
+router.delete('/:id_pedido/producto/:id_producto', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero']), async (req, res) => {
   const { id_pedido, id_producto } = req.params;
   try {
     const [result] = await db.execute(
@@ -93,7 +95,7 @@ router.delete('/:id_pedido/producto/:id_producto', async (req, res) => {
 });
 
 //Actualizar cantidad de un producto
-router.put('/:id_pedido/producto/:id_producto', async (req, res) => {
+router.put('/:id_pedido/producto/:id_producto', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero']), async (req, res) => {
   const { id_pedido, id_producto } = req.params;
   const { cantidad } = req.body;
 
@@ -119,7 +121,7 @@ router.put('/:id_pedido/producto/:id_producto', async (req, res) => {
 });
 
 // Agregar un nuevo producto a un pedido
-router.post('/:id_pedido/producto', async (req, res) => {
+router.post('/:id_pedido/producto', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero']), async (req, res) => {
   const { id_pedido } = req.params;
   const { id_producto, cantidad } = req.body;
 
@@ -180,8 +182,9 @@ router.post('/:id_pedido/producto', async (req, res) => {
 });
 
 //Exclusiones de componentes
+
   // Añadir exclusión de componente a un producto específico dentro de un pedido
-router.post('/:id_pedido/exclusiones', async (req, res) => {
+router.post('/:id_pedido/exclusiones', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero']), async (req, res) => {
   const { id_pedido } = req.params;
   const { id_producto, id_componente } = req.body;
 
@@ -214,7 +217,7 @@ router.post('/:id_pedido/exclusiones', async (req, res) => {
 });
 
 // Eliminar una exclusión de componente para un producto de un pedido
-router.delete('/:id_pedido/exclusiones', async (req, res) => {
+router.delete('/:id_pedido/exclusiones', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero']), async (req, res) => {
   const { id_pedido } = req.params;
   const { id_producto, id_componente } = req.body;
 

@@ -8,6 +8,8 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json());
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 // Rutas
 const usuariosRoutes = require('./routes/usuarios');
@@ -16,8 +18,14 @@ app.use('/api/usuarios', usuariosRoutes);
 const rolesRoutes = require('./routes/roles');
 app.use('/api/roles', rolesRoutes);
 
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 const productosRoutes = require('./routes/productos');
 app.use('/api/productos', productosRoutes);
+
+const menuRoutes = require('./routes/menu');
+app.use('/api/menu', menuRoutes);
 
 const categoriasRoutes = require('./routes/categorias');
 app.use('/api/categorias', categoriasRoutes);

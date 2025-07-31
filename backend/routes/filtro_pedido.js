@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const autenticarToken = require('../middleware/autenticacion');
+const verificarPermiso = require('../middleware/permisos');
 
 // Obtener pedidos filtrados por estado
-router.get('/', async (req, res) => {
+router.get('/', autenticarToken, verificarPermiso(['admin', 'gerente', 'mesero', 'encargado', 'cocinero', 'cajero']), async (req, res) => {
   const { estado } = req.query;
 
   try {
@@ -30,7 +32,7 @@ router.get('/', async (req, res) => {
 
 
 // Filtro por rango de fechas
-router.get('/fecha', async (req, res) => {
+router.get('/fecha', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado']), async (req, res) => {
   const { inicio, fin } = req.query;
 
   if (!inicio || !fin) {
@@ -53,7 +55,7 @@ router.get('/fecha', async (req, res) => {
 });
 
 // Filtro por nombre de mesero
-router.get('/mesero/:nombre', async (req, res) => {
+router.get('/mesero/:nombre', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'cocinero', 'mesero', 'cajero']), async (req, res) => {
   const { nombre } = req.params;
 
   try {
@@ -72,7 +74,7 @@ router.get('/mesero/:nombre', async (req, res) => {
 });
 
 // Filtro por nombre de producto
-router.get('/producto/:nombre', async (req, res) => {
+router.get('/producto/:nombre', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero', 'cajero']), async (req, res) => {
   const { nombre } = req.params;
 
   try {
@@ -92,7 +94,7 @@ router.get('/producto/:nombre', async (req, res) => {
 });
 
 // Filtro por categoría
-router.get('/categoria/:id', async (req, res) => {
+router.get('/categoria/:id', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero', 'cajero']), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -112,7 +114,7 @@ router.get('/categoria/:id', async (req, res) => {
 });
 
 // Filtro por precio total de pedido
-router.get('/precio', async (req, res) => {
+router.get('/precio', autenticarToken, verificarPermiso(['admin', 'gerente', 'encargado', 'mesero', 'cajero']), async (req, res) => {
   const { min, max } = req.query;
 
   if (min == null || max == null) {
